@@ -8,11 +8,7 @@ This project has 2 python files:
 
 Instructions to run the project:
 
-Before proceeding to run the project, download the trained file of the reference dataset from:
-
-https://uni-paderborn.sciebo.de/s/bX7aaQErnWisXft
-
-Add this file to datasets/trainedModel folder
+Before proceeding to run the project, unzip the datasets file which contains all the training related files.
 
 1. To test the working, open a command prompt and type python app.py to run the project.
 2. Click on the http://127.0.0.1:5000/ link in command pallette to open the link. 
