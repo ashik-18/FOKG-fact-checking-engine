@@ -1,0 +1,2 @@
+<http://rdf.freebase.com/ns/m.0g72r> <http://rdf.freebase.com/ns/people.person.nationality> <http://rdf.freebase.com/ns/m.09c7w0> .
+<http://rdf.freebase.com/ns/m.0g72r> <http://swc2017.aksw.org/hasTruthValue> "0.9999998807907104"^^<http://www.w3.org/2001/XMLSchema#double> .
