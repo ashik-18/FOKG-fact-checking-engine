@@ -9,17 +9,14 @@ from joblib import dump
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import roc_auc_score
 
-############################################
 # PyKEEN: MANUAL APIS
-############################################
+
 from pykeen.triples import TriplesFactory
 from pykeen.models import TransE
-from pykeen.training import SLCWATrainingLoop  # or LCWATrainingLoop
+from pykeen.training import SLCWATrainingLoop 
 from pykeen.losses import MarginRankingLoss
 
-############################################
 # 1) Paths
-############################################
 
 REFERENCE_DATASET = "datasets/reference-kg.nt"
 TRAIN_FILE = "datasets/fokg-sw-train-2024.nt"
@@ -33,7 +30,6 @@ with open(REFERENCE_DATASET, "r", encoding="utf-8") as f:
         line = line.strip()
         if line and line.endswith('.'):
             try:
-                # Attempt to parse the triple
                 s, p, o = line.split(' ', 2)
                 valid_triples.append(line)
             except ValueError:
@@ -45,13 +41,9 @@ with open(REFERENCE_DATASET, "r", encoding="utf-8") as f:
 with open("datasets/filtered-reference-kg.nt", "w", encoding="utf-8") as f:
     f.write("\n".join(valid_triples))
 
-# Update the reference dataset path
 REFERENCE_DATASET = "datasets/filtered-reference-kg.nt"
 
-
-############################################
 # 2) Load Reference KG as (s, p, o)
-############################################
 
 print("Loading reference dataset:", REFERENCE_DATASET)
 ref_graph = Graph()
@@ -69,9 +61,7 @@ all_triples_array = np.array(all_triples, dtype=object)
 reference_factory = TriplesFactory.from_labeled_triples(all_triples_array)
 print("reference_factory.num_triples =", reference_factory.num_triples)
 
-############################################
-# 3) Manually Create a TransE Model
-############################################
+# 3) Manual TransE Model
 
 embedding_dim = 200
 margin = 1.0
@@ -81,16 +71,15 @@ model = TransE(
     embedding_dim=embedding_dim,
     scoring_fct_norm=1,  # L1 distance
     loss=MarginRankingLoss(margin=margin),  # margin-based ranking
-    # You can set random_seed=..., but we'll do that globally or outside
 )
 
 print("Created TransE model with embedding_dim =", embedding_dim)
 
-############################################
-# 4) TRAINING LOOP (No pipeline)
-############################################
 
-# We'll use SLCWATrainingLoop for standard negative sampling.
+# 4) TRAINING LOOP (No pipeline)
+
+
+# SLCWATrainingLoop for standard negative sampling.
 # TRAINING LOOP
 training_loop = SLCWATrainingLoop(
     model=model,
@@ -113,22 +102,18 @@ _ = training_loop.train(
 print("Done training TransE manually.")
 
 
-# After training, we can retrieve the final entity/relation embeddings via model.
+# After training retrieval of the final entity/relation embeddings via model.
 
 # ID mappings
 entity_to_id = reference_factory.entity_to_id
 relation_to_id = reference_factory.relation_to_id
 
-############################################
 # 5) Access the Embedding Modules
-############################################
 
 entity_representation = model.entity_representations[0]
 relation_representation = model.relation_representations[0]
 
-############################################
 # 6) Parse Reified Train/Test
-############################################
 
 def load_reified_facts(nt_file, load_truth=True):
     g = rdflib.Graph()
@@ -155,11 +140,9 @@ test_facts  = load_reified_facts(TEST_FILE, load_truth=False)
 
 print(f"Loaded {len(train_facts)} reified train facts, {len(test_facts)} reified test facts.")
 
-############################################
 # 7) Embedding Lookup for (s, p, o)
-############################################
 
-# Updated embedding lookup function
+# Embedding lookup function
 def get_embedding_for_fact(subj, pred, obj):
     if subj not in entity_to_id or obj not in entity_to_id or pred not in relation_to_id:
         emb_dim = model.entity_representations[0]._embeddings.weight.shape[-1]
@@ -176,10 +159,7 @@ def get_embedding_for_fact(subj, pred, obj):
     cat = torch.cat([s_emb[0], p_emb[0], o_emb[0]], dim=0)
     return cat.detach().cpu().numpy()
 
-
-############################################
-# 8) Build X_train, X_test
-############################################
+# 8) X_train, X_test
 
 train_triples, train_labels = [], []
 for fact_iri, s, p, o, tv in train_facts:
@@ -198,9 +178,7 @@ X_train = np.array(X_train)
 X_test = [get_embedding_for_fact(s, p, o) for (s, p, o) in test_triples]
 X_test = np.array(X_test)
 
-############################################
-# 9) Classify with MLP
-############################################
+# 9) MLP
 
 mlp = MLPClassifier(hidden_layer_sizes=(128, 64), activation="relu", solver="adam", max_iter=50, random_state=42)
 mlp.fit(X_train, y_train)
@@ -211,9 +189,7 @@ print(f"Train AUC: {train_auc:.4f}")
 
 test_probs = mlp.predict_proba(X_test)[:, 1]
 
-############################################
 # 10) Write TTL file
-############################################
 
 os.makedirs(os.path.dirname(RESULT_FILE), exist_ok=True)
 with open(RESULT_FILE, "w", encoding="utf-8") as f:

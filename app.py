@@ -17,9 +17,9 @@ triples_factory = checkpoint["triples_factory"]
 #TransE model
 model = TransE(
     triples_factory=triples_factory,
-    embedding_dim=200,  # Same dimension as used during training
+    embedding_dim=200, 
     scoring_fct_norm=1,
-    loss=None,  # The loss is not needed for inference
+    loss=None, 
 )
 model.load_state_dict(checkpoint["model_state_dict"])
 model.eval()
